@@ -25,7 +25,10 @@ server.on('connection', (socket) => {
     /**
      * Connection closed unexpectedly or any other error;
     */
-    socket.on("error", () => socket.destroy());
+    socket.on("error", (err) => {
+        console.log(`Error: ${err.message}`)
+        socket.destroy();
+    });
 
     /**
      * On Incoming data
@@ -37,7 +40,7 @@ server.on('connection', (socket) => {
                 listFiles(socket);
                 break;
             
-            case 'download.request':
+            case 'download:request':
                 if (typeof obj.data === 'string' && obj.data.split(' ').length) {
                     // At this point we know that the client sent a download request
                     // with 1 or more parameters. So 2 cases: send the whole file or send
@@ -51,7 +54,7 @@ server.on('connection', (socket) => {
 
                     // First we check if the file exists
                     if(!existsSync(path.join(__dirname, 'files', fileName)))
-                        socket.destroy(new Error("File not found"))
+                        socket.destroy(new Error("File not found"), )
 
                     // Then we check whether we have to send the whole file or slice
                     // and send a smaller chunk
@@ -60,18 +63,27 @@ server.on('connection', (socket) => {
                         downloadFile(fileName, 0, socket);
                     } else {
                         socket.write(JSON.stringify({
-                            command: 'download.signature',
+                            command: 'download:signature',
                             data: `${fileName} ${signFile(fileName, parseInt(obj.data.split(' ')[2]))}`,
                         }));
                     }
-                }
-                socket.destroy(new Error("Invalid command"))
+                } else socket.destroy(new Error("Invalid command"));
+                break;
+
+            case 'download:start':
+                const [fileName, startingSize] = (obj.data as string).split(' ');
+
+                if(Number.isNaN(parseInt(startingSize)))
+                    socket.destroy(new Error("Invalid starting size"));
+
+                downloadFile(fileName, parseInt(startingSize), socket);
                 break;
         
             default:
                 socket.destroy(new Error("Invalid command"))
                 break;
         }
+        socket.end();
     });
 });
 

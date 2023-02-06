@@ -41,7 +41,7 @@ client.connect(connectionOptions, async () => {
         const pathToFile = path.join(__dirname, 'downloads', fileName);
 
         client.write(JSON.stringify({
-            command: 'download.request',
+            command: 'download:request',
             data: `${fileName} ${fs.existsSync(pathToFile) ? fs.statSync(pathToFile).size : ''}`.trim(),
         }));
     }
@@ -58,16 +58,26 @@ client.on("data", (data) => {
             console.log(result.data);
             break;
         
-        case 'download.signature':
+        case 'download:signature':
             const [fileName, signature] = (result.data as string).split(' ');
-            console.log(signature)
-            console.log(signFile(fileName))
+            const pathToFile = path.join(__dirname, 'downloads', fileName);
             if(signFile(fileName) !== signature){
-                fs.unlinkSync(path.join(__dirname, 'downloads', fileName));
+                fs.unlinkSync(pathToFile);
+                client.write(JSON.stringify({
+                    command: 'download:request',
+                    data: `${fileName}`,
+                }));
+            } else {
+                client.write(JSON.stringify({
+                    command: 'download:start',
+                    data: `${fileName} ${fs.statSync(pathToFile).size}`,
+                }));
             }
             break;
     
         default:
             break;
     }
-})
+});
+
+client.on("error", (err) => console.log(`Error: ${err.message}`))
