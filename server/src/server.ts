@@ -64,7 +64,7 @@ server.on('connection', (socket) => {
                     } else {
                         socket.write(JSON.stringify({
                             command: 'download:signature',
-                            data: `${fileName} ${signFile(fileName, parseInt(obj.data.split(' ')[2]))}`,
+                            data: `${fileName} ${signFile(fileName, parseInt(startingSize))}`,
                         }));
                     }
                 } else socket.destroy(new Error("Invalid command"));
@@ -78,12 +78,11 @@ server.on('connection', (socket) => {
 
                 downloadFile(fileName, parseInt(startingSize), socket);
                 break;
-        
+                
             default:
                 socket.destroy(new Error("Invalid command"))
                 break;
         }
-        socket.end();
     });
 });
 

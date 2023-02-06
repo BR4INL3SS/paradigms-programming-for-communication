@@ -10,7 +10,7 @@ import path from 'path';
 const signFile = (fileName: string, size: number) => {
     const pathToFile = path.join(__dirname, '..', 'files', fileName);
 
-    const fileBuffer = fs.readFileSync(pathToFile).subarray(size);
+    const fileBuffer = fs.readFileSync(pathToFile).subarray(0, size);
 
     const hash = createHash("md5").update(fileBuffer).digest("hex")
 

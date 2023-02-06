@@ -29,8 +29,8 @@ client.connect(connectionOptions, async () => {
         console.log(`${command} is not a valid command`);
         command = await rl.question('What do you want to do? ');
     }
-    
-    if(command === 'list'){
+
+    if (command === 'list') {
         client.write(JSON.stringify({
             command,
         }));
@@ -46,7 +46,7 @@ client.connect(connectionOptions, async () => {
         }));
     }
 
-        
+
     rl.close();
 });
 
@@ -57,11 +57,11 @@ client.on("data", (data) => {
         case 'list.response':
             console.log(result.data);
             break;
-        
+
         case 'download:signature':
-            const [fileName, signature] = (result.data as string).split(' ');
+            var [fileName, signature] = (result.data as string).split(' ');
             const pathToFile = path.join(__dirname, 'downloads', fileName);
-            if(signFile(fileName) !== signature){
+            if (signFile(fileName) !== signature) {
                 fs.unlinkSync(pathToFile);
                 client.write(JSON.stringify({
                     command: 'download:request',
@@ -74,7 +74,14 @@ client.on("data", (data) => {
                 }));
             }
             break;
-    
+
+        case 'download:file':
+            var [fileName, fileBuffer] = (result.data as string).split(' ');
+
+            fs.writeFileSync(path.join(__dirname, 'downloads', fileName), Buffer.from(fileBuffer, "base64"), {flag: 'a+'});
+
+            break;
+
         default:
             break;
     }
