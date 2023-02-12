@@ -102,7 +102,6 @@ server.on('connection', (socket) => {
                 if(signatureValidation === 'N'){
                     unlinkSync(pathToFile);
                 }
-                // TODO don't forget this
                 writeFileSync(pathToFile, Buffer.from(fileBuffer, "base64"), {flag: 'a+'});
                 socket.end();
                 
