@@ -1,5 +1,5 @@
 import net from "net";
-import { existsSync } from 'fs';
+import { existsSync, statSync, writeFileSync, unlinkSync } from 'fs';
 import path from 'path';
 import downloadFile from "./handlers/downloadFile";
 import listFiles from "./handlers/listFiles";
@@ -46,7 +46,7 @@ server.on('connection', (socket) => {
                     // with 1 or more parameters. So 2 cases: send the whole file or send
                     // the remaining bytes to save bandwidth.
                     
-                    const [fileName, startingSize] = obj.data.split(' ');
+                    var [fileName, startingSize] = obj.data.split(' ');
 
                     // Let's check the input from the client first
                     if(startingSize && Number.isNaN(parseInt(startingSize)))
@@ -71,13 +71,40 @@ server.on('connection', (socket) => {
                 break;
 
             case 'download:start':
-                const [fileName, startingSize] = (obj.data as string).split(' ');
+                var [fileName, startingSize] = (obj.data as string).split(' ');
 
                 if(Number.isNaN(parseInt(startingSize)))
                     socket.destroy(new Error("Invalid starting size"));
 
                 downloadFile(fileName, parseInt(startingSize), socket);
                 break;
+
+            case 'upload:request':
+                var fileNameUpload = (obj.data as string).split(' ').at(0) ?? '';
+                const pathToUploadFile = path.join(__dirname, 'files', fileNameUpload);
+                if(existsSync(pathToUploadFile)){
+                    socket.write(JSON.stringify({
+                        command: 'upload:signature',
+                        data: `${fileNameUpload} ${statSync(pathToUploadFile).size} ${signFile(fileNameUpload, statSync(pathToUploadFile).size)}`,
+                    }));
+                } else {
+                    socket.write(JSON.stringify({
+                        command: 'upload:signature',
+                        data: `${fileNameUpload} 0`,
+                    }));
+                }
+                break;
+
+            case 'upload:file':
+                var [fileName, signatureValidation, fileBuffer] = (obj.data as string).split(' ');
+                var pathToFile = path.join(__dirname, 'files', fileName)
+                
+                if(signatureValidation === 'N'){
+                    unlinkSync(pathToFile);
+                }
+                // TODO don't forget this
+                writeFileSync(pathToFile, Buffer.from(fileBuffer, "base64"), {flag: 'a+'});
+                socket.end();
                 
             default:
                 socket.destroy(new Error("Invalid command"))
