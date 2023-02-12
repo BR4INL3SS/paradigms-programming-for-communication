@@ -10,8 +10,8 @@ const rl = readline.createInterface({ input, output });
 const client = new net.Socket();
 
 const connectionOptions = {
-    host: process.argv[2] ?? "localhost",
-    port: process.argv[3] ? parseInt(process.argv[3]) : 59090,
+    host: "localhost",
+    port: 59090,
 }
 
 client.connect(connectionOptions, async () => {
@@ -71,7 +71,7 @@ client.on("data", (data) => {
     const result: { command: string, data: Buffer | string | null } = JSON.parse(data.toString('utf-8'));
 
     switch (result.command) {
-        case 'list.response':
+        case 'list:response':
             console.log(result.data);
             client.end();
             break;
